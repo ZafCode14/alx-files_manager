@@ -7,29 +7,42 @@ const url = `mongodb://${DB_HOST}:${DB_PORT}`;
 
 class DBClient {
   constructor() {
-    MongoClient.connect(url, { useUnifiedTopology: true }, (err, client) => {
-      if (!err) {
+    this.client = null;
+    this.db = null;
+    this.usersCollection = null;
+    this.filesCollection = null;
+
+    MongoClient.connect(url, { useUnifiedTopology: true })
+      .then((client) => {
+        this.client = client;
         this.db = client.db(DB_DATABASE);
         this.usersCollection = this.db.collection('users');
         this.filesCollection = this.db.collection('files');
-      } else {
+      })
+      .catch((err) => {
         console.log(err.message);
-        this.db = false;
-      }
-    });
+      });
   }
 
   isAlive() {
-    return Boolean(this.db);
+    return this.db !== null && this.client !== null;
   }
 
   async nbUsers() {
-    const numberOfUsers = this.usersCollection.countDocuments();
+    if (!this.usersCollection) {
+      console.log('Users collection not initialized');
+      return 0;
+    }
+    const numberOfUsers = await this.usersCollection.countDocuments();
     return numberOfUsers;
   }
 
   async nbFiles() {
-    const numberOfFiles = this.filesCollection.countDocuments();
+    if (!this.filesCollection) {
+      console.log('Files collection not initialized');
+      return 0;
+    }
+    const numberOfFiles = await this.filesCollection.countDocuments();
     return numberOfFiles;
   }
 }
